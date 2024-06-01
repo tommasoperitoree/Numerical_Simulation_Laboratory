@@ -259,4 +259,5 @@ pyrightconfig.json
 # Personal
 build/
 Dabuttare/
+LSN_Material/
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,cmake,c++,python,jupyternotebooksS
