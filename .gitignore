@@ -253,6 +253,9 @@ pyrightconfig.json
 .history
 .ionide
 
+#MacOs specific
+.DS_Store
+
 # Personal
 build/
 Dabuttare/
