@@ -1,8 +1,6 @@
 # Description of usage
 
-
 ### Tree structure
-
 
 * [1.1/](./LSN_01/1.1)
   * [1.1.1.dat](./LSN_01/1.1/1.1.1.dat)
