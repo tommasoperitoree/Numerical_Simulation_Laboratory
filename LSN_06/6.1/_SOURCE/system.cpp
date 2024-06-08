@@ -70,7 +70,8 @@ double System :: Force(int i, int dim){ // Compute the force acting on particle 
 
 void System :: move(int i){ // Propose a MC move for particle i
 	if(_sim_type == 3) { //Gibbs sampler for Ising 1D
-		double prob_i_up = 1. / (1. + exp (-2. * _beta * (_J * (_particle(this->pbc(i-1)).getspin() + _particle(this->pbc(i+1)).getspin()) + _H))); // conditional distribution of heat bath
+		double delta_E = 2. * (_J * (_particle(this->pbc(i-1)).getspin() + _particle(this->pbc(i+1)).getspin()) + _H);
+		double prob_i_up = 1. / (1. + exp (-1.*_beta * delta_E)); // conditional distribution of heat bath
 		if (_rnd.Rannyu() < prob_i_up) _particle(i).setspin(+1); // spin up
 		else _particle(i).setspin(-1);  // spin down
 		_naccepted++;
@@ -167,10 +168,10 @@ void System :: initialize(string input_dir){ // Initialize the System object acc
 				else if (_int_phase == 2) _phase = "Liquid";
 				else if (_int_phase == 3) _phase = "Solid" ;
 			}
-			if(_sim_type > 1){
+			if(_sim_type > 1){ // _sim_type format : SIMULATION_TYPE Gibbs/Metro #J #H #equilibration
 				input >> _J;
 				input >> _H;
-				_equilibration = false;
+				input >> _equilibration;
 			}
 			if(_sim_type > 3){
 				cerr << "PROBLEM: unknown simulation type" << endl;
@@ -186,9 +187,11 @@ void System :: initialize(string input_dir){ // Initialize the System object acc
 			} else if (_sim_type==0) {
 				_output_dir = "../" + _phase +"/OUTPUT/";
 			} else if (_sim_type == 2){
-				_output_dir = "../_OUTPUT/METROPOLIS/" + to_string(_temp).substr(0, 4) + "_" + to_string(_H).substr(0,4) + "_" ;
+				if (_equilibration) _output_dir = "../_OUTPUT/METROPOLIS/EQUILIBRATION/" + to_string(_temp).substr(0, 4) + "_" + to_string(_H).substr(0,4) + "_" ;
+				else _output_dir = "../_OUTPUT/METROPOLIS/" + to_string(_temp).substr(0, 4) + "_" + to_string(_H).substr(0,4) + "_" ;
 			} else if (_sim_type == 3){
-				_output_dir = "../_OUTPUT/GIBBS/" + to_string(_temp).substr(0, 4) + "_" + to_string(_H).substr(0,4) + "_" ;
+				if (_equilibration) _output_dir = "../_OUTPUT/GIBBS/EQUILIBRATION/" + to_string(_temp).substr(0, 4) + "_" + to_string(_H).substr(0,4) + "_" ;
+				else _output_dir = "../_OUTPUT/GIBBS/" + to_string(_temp).substr(0, 4) + "_" + to_string(_H).substr(0,4) + "_" ;
 			}
 			coutf.open(_output_dir + "output.dat");
 			if(_sim_type == 0)		coutf << "LJ MOLECULAR DYNAMICS (NVE) SIMULATION"	<< endl;
@@ -225,13 +228,6 @@ void System :: initialize(string input_dir){ // Initialize the System object acc
 				coutf << setw(12) << _side[i];
 			}
 			coutf << endl;
-		} else if( property == "R_CUT" ){
-			input >> _r_cut;
-			coutf << "R_CUT = " << _r_cut << endl;
-		} else if( property == "DELTA" ){
-			input >> delta;
-			coutf << "DELTA = " << delta << endl;
-			_delta = delta;
 		} else if( property == "NBLOCKS" ){
 			input >> _nblocks;
 			coutf << "NBLOCKS = " << _nblocks << endl;
@@ -543,8 +539,14 @@ void System :: save_final_block (int blk) { // Save the final block data in a cu
 	if (_sim_type > 1 and blk == _nblocks) {
 		if (_measure_tenergy) {
 			ofstream coutte;
-			if(_sim_type==2) coutte.open("../_OUTPUT/METROPOLIS/total_energy_" + to_string(_H).substr(0,4) + ".dat",ios::app);
-			if(_sim_type==3) coutte.open("../_OUTPUT/GIBBS/total_energy_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			if(_sim_type==2){
+				if (_equilibration) coutte.open("../_OUTPUT/METROPOLIS/EQUILIBRATION/total_energy_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutte.open("../_OUTPUT/METROPOLIS/total_energy_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
+			if(_sim_type==3){
+				if (_equilibration) coutte.open("../_OUTPUT/GIBBS/EQUILIBRATION/total_energy_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutte.open("../_OUTPUT/GIBBS/total_energy_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
 			if (coutte.is_open()){
 				error = this->error(_global_av(_index_tenergy),_global_av2(_index_tenergy), this->get_nbl()) ;
 				// cout << _temp << " " <<  _global_av(_index_tenergy) << " " << error << endl;
@@ -556,8 +558,14 @@ void System :: save_final_block (int blk) { // Save the final block data in a cu
 		}
 		if (_measure_chi and _H==0) {
 			ofstream coutchi ;
-			if(_sim_type==2) coutchi.open("../_OUTPUT/METROPOLIS/susceptibility_" + to_string(_H).substr(0,4) + ".dat",ios::app);
-			if(_sim_type==3) coutchi.open("../_OUTPUT/GIBBS/susceptibility_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			if(_sim_type==2){
+				if (_equilibration) coutchi.open("../_OUTPUT/METROPOLIS/EQUILIBRATION/susceptibility_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutchi.open("../_OUTPUT/METROPOLIS/susceptibility_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
+			if(_sim_type==3){
+				if (_equilibration) coutchi.open("../_OUTPUT/GIBBS/EQUILIBRATION/susceptibility_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutchi.open("../_OUTPUT/GIBBS/susceptibility_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
 			if (coutchi.is_open()){
 				error = this->error(_global_av(_index_chi),_global_av2(_index_chi), this->get_nbl()) ;
 				// cout << _temp << " " <<  _global_av(_index_chi) << " " << error << endl;
@@ -569,8 +577,14 @@ void System :: save_final_block (int blk) { // Save the final block data in a cu
 		}
 		if (_measure_cv and _H==0) {
 			ofstream coutcv;
-			if(_sim_type==2) coutcv.open("../_OUTPUT/METROPOLIS/specific_heat_" + to_string(_H).substr(0,4) + ".dat",ios::app);
-			if(_sim_type==3) coutcv.open("../_OUTPUT/GIBBS/specific_heat_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			if(_sim_type==2){
+				if (_equilibration) coutcv.open("../_OUTPUT/METROPOLIS/EQUILIBRATION/specific_heat_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutcv.open("../_OUTPUT/METROPOLIS/specific_heat_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
+			if(_sim_type==3){
+				if (_equilibration) coutcv.open("../_OUTPUT/GIBBS/EQUILIBRATION/specific_heat_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutcv.open("../_OUTPUT/GIBBS/specific_heat_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
 			if (coutcv.is_open()){
 				error = this->error(_global_av(_index_cv),_global_av2(_index_cv), this->get_nbl()) ;
 				// cout << _temp << " " <<  _global_av(_index_cv) << " " << error << endl;
@@ -582,8 +596,14 @@ void System :: save_final_block (int blk) { // Save the final block data in a cu
 		}
 		if (_measure_magnet and _H!=0) {
 			ofstream coutmag;
-			if(_sim_type==2) coutmag.open("../_OUTPUT/METROPOLIS/magnetization_" + to_string(_H).substr(0,4) + ".dat",ios::app);
-			if(_sim_type==3) coutmag.open("../_OUTPUT/GIBBS/magnetization_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			if(_sim_type==2){
+				if (_equilibration) coutmag.open("../_OUTPUT/METROPOLIS/EQUILIBRATION/magnetization_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutmag.open("../_OUTPUT/METROPOLIS/magnetization_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
+			if(_sim_type==3){
+				if (_equilibration) coutmag.open("../_OUTPUT/GIBBS/EQUILIBRATION/magnetization_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+				else coutmag.open("../_OUTPUT/GIBBS/magnetization_" + to_string(_H).substr(0,4) + ".dat",ios::app);
+			}
 			if (coutmag.is_open()){
 				error = this->error(_global_av(_index_magnet),_global_av2(_index_magnet), this->get_nbl()) ;
 				// cout << _temp << " " <<  _global_av(_index_magnet) << " " << error << endl;
@@ -825,7 +845,7 @@ void System :: averages(int blk){ // Accumulate block averages
 		coutf.close();
 	}
 	// TOTAL ENERGY //////////////////////////////////////////////////////////////
-	if (_measure_tenergy and !_equilibration and _sim_type!=2 and _sim_type!=3){
+	if (_measure_tenergy and _sim_type!=2 and _sim_type!=3){
 		coutf.open(_output_dir + "total_energy.dat",ios::app);
 		average	= _average(_index_tenergy);
 		sum_average = _global_av(_index_tenergy);

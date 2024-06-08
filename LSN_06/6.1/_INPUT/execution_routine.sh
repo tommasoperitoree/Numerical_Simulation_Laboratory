@@ -16,9 +16,9 @@ execution_dir="../_INPUT/input_orig.dat"
 
 
 # Define the cycling variable
-start=3.0
-end=0.2
-increment=-0.02 # Adjust increment value as needed
+start=2.5
+end=0.5
+increment=-0.025 # Adjust increment value as needed
 
 # Generate cycling variable values
 while (( $(bc <<< "$end <= $start") )); do
@@ -32,10 +32,14 @@ if [ ! -f "$temperature_dir" ]; then
    exit 1
 fi
 
+# check that input file has equilibration set to false
+awk -v 'NR==1{$5=0}1' "$execution_dir" > "${execution_dir}.tmp" && mv "${execution_dir}.tmp" "$execution_dir" || { echo "Failed to modify file."; exit 1; }
+
+
 # Loop over the two different methods, Gibbs and Metropolis
 for method in 2 3; do
 
-	# Modify the value of H in the execution file
+	# Modify the value of method in the execution file
 	awk -v m="$method" 'NR==1{$2=m}1' "$execution_dir" > "${execution_dir}.tmp" && mv "${execution_dir}.tmp" "$execution_dir" || { echo "Failed to modify file."; exit 1; }
 
 	# Loop over the two different values of H

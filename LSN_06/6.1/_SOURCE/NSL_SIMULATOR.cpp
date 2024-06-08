@@ -29,6 +29,11 @@ int main (int argc, char *argv[]){
    SYS.initialize_properties();
    SYS.block_reset(0);
 
+	if(SYS.get_equilib()){
+		for (int istep = 1; istep <= 1e5; ++istep)
+			SYS.step();
+	}
+
    for(int i=0; i < SYS.get_nbl(); i++){ //loop over blocks
       for(int j=0; j < SYS.get_nsteps(); j++){ //loop over steps in a block
          SYS.step();
