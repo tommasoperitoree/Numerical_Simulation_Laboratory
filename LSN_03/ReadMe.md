@@ -1,4 +1,4 @@
-## How to use my code
+## How to use my code - LSN Exercise 03
 
 Navigate to the code directory `./3.1` and follow the instructions 
 
