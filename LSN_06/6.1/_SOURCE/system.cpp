@@ -27,14 +27,14 @@ void System :: step(){ // Perform a simulation step
 	return;
 }
 
-void System :: Verlet(){
+void System :: Verlet(){ // Verlet algorithm for molecular dynamics
 	double xnew, ynew, znew;
-	for(int i=0; i<_npart; i++){ //Force acting on particle i
+	for(int i=0; i<_npart; i++){ // Force acting on particle i
 		_fx(i) = this->Force(i,0);
 		_fy(i) = this->Force(i,1);
 		_fz(i) = this->Force(i,2);
 	}
-	for(int i=0; i<_npart; i++){ //Verlet integration scheme
+	for(int i=0; i<_npart; i++){ // Verlet integration scheme
 		xnew = this->pbc( 2.0 * _particle(i).getposition(0,true) - _particle(i).getposition(0,false) + _fx(i) * pow(_delta,2), 0);
 		ynew = this->pbc( 2.0 * _particle(i).getposition(1,true) - _particle(i).getposition(1,false) + _fy(i) * pow(_delta,2), 1);
 		znew = this->pbc( 2.0 * _particle(i).getposition(2,true) - _particle(i).getposition(2,false) + _fz(i) * pow(_delta,2), 2);
@@ -50,17 +50,17 @@ void System :: Verlet(){
 	return;
 }
 
-double System :: Force(int i, int dim){
+double System :: Force(int i, int dim){ // Compute the force acting on particle i in the dim direction
 	double f=0.0, dr;
 	vec distance;
 	distance.resize(_ndim);
 	for (int j=0; j<_npart; j++){
-		if(i != j){
+		if(i != j){ // Compute the force acting on particle i due to particle j
 			distance(0) = this->pbc( _particle(i).getposition(0,true) - _particle(j).getposition(0,true), 0);
 			distance(1) = this->pbc( _particle(i).getposition(1,true) - _particle(j).getposition(1,true), 1);
 			distance(2) = this->pbc( _particle(i).getposition(2,true) - _particle(j).getposition(2,true), 2);
 			dr = sqrt(arma::dot(distance,distance) ); // dot is dot-product, hence this calculates the modulus of distance
-			if(dr < _r_cut){
+			if(dr < _r_cut){ // Compute the force only if the particles are close enough
 				f += distance(dim) * (48.0/pow(dr,14) - 24.0/pow(dr,8));
 			}
 		}
@@ -69,10 +69,10 @@ double System :: Force(int i, int dim){
 }
 
 void System :: move(int i){ // Propose a MC move for particle i
-	if(_sim_type == 3) { //Gibbs sampler for Ising
+	if(_sim_type == 3) { //Gibbs sampler for Ising 1D
 		double prob_i_up = 1. / (1. + exp (-2. * _beta * (_J * (_particle(this->pbc(i-1)).getspin() + _particle(this->pbc(i+1)).getspin()) + _H))); // conditional distribution of heat bath
-		if (_rnd.Rannyu() < prob_i_up) _particle(i).setspin(+1);
-		else _particle(i).setspin(-1);
+		if (_rnd.Rannyu() < prob_i_up) _particle(i).setspin(+1); // spin up
+		else _particle(i).setspin(-1);  // spin down
 		_naccepted++;
 	} else {					 // M(RT)^2
 		if(_sim_type == 1){			 // LJ system
@@ -98,30 +98,30 @@ void System :: move(int i){ // Propose a MC move for particle i
 bool System :: metro(int i){ // Metropolis algorithm
 	bool decision = false;
 	double delta_E, acceptance;
-	if(_sim_type == 1) delta_E = this->Boltzmann(i,true) - this->Boltzmann(i,false);
+	if(_sim_type == 1) delta_E = this->Boltzmann(i,true) - this->Boltzmann(i,false); // Energy as Boltzmann factor
 	else delta_E = 2.0 * _particle(i).getspin() * 
-								 ( _J * (_particle(this->pbc(i-1)).getspin() + _particle(this->pbc(i+1)).getspin() ) + _H );
-	acceptance = exp(-_beta*delta_E);
-	if(_rnd.Rannyu() < acceptance ) decision = true; //Metropolis acceptance step
+								 ( _J * (_particle(this->pbc(i-1)).getspin() + _particle(this->pbc(i+1)).getspin() ) + _H ); // Energy difference
+	acceptance = exp(-_beta*delta_E); // Metropolis acceptance probability
+	if(_rnd.Rannyu() < acceptance ) decision = true; // Metropolis acceptance step
 	return decision;
 }
 
-double System :: Boltzmann(int i, bool xnew){
+double System :: Boltzmann(int i, bool xnew){ // Compute the Boltzmann weight for particle i
 	double energy_i=0.0;
 	double dx, dy, dz, dr;
 	for (int j=0; j<_npart; j++){
 		if(j != i){
-			dx = this->pbc(_particle(i).getposition(0,xnew) - _particle(j).getposition(0,1), 0);
+			dx = this->pbc(_particle(i).getposition(0,xnew) - _particle(j).getposition(0,1), 0); 
 			dy = this->pbc(_particle(i).getposition(1,xnew) - _particle(j).getposition(1,1), 1);
 			dz = this->pbc(_particle(i).getposition(2,xnew) - _particle(j).getposition(2,1), 2);
-			dr = dx*dx + dy*dy + dz*dz;
-			dr = sqrt(dr);
-			if(dr < _r_cut){
+			dr = dx*dx + dy*dy + dz*dz; // Compute the square of the distance
+			dr = sqrt(dr); 
+			if(dr < _r_cut){ // Compute the potential energy only if the particles are close enough
 				energy_i += 1.0/pow(dr,12) - 1.0/pow(dr,6);
 			}
 		}
 	}
-	return 4.0 * energy_i;
+	return 4.0 * energy_i; 
 }
 
 double System :: pbc(double position, int i){ // Enforce periodic boundary conditions
@@ -253,13 +253,13 @@ void System :: initialize(string input_dir){ // Initialize the System object acc
 	return;
 }
 
-void System :: initialize_spin(){
+void System :: initialize_spin(){ // Initialize the spin configuration
 	double spin;
 	ifstream cins;
 	if(!_restart and _sim_type > 1){
 		for(int i=0; i<_npart; i++){
 			spin = _rnd.Rannyu();
-			if (spin < 0.5) _particle(i).setspin(-1);
+			if (spin < 0.5) _particle(i).setspin(-1); // random spin configuration
 			else _particle(i).setspin(1);
 		}
 	}
@@ -274,7 +274,7 @@ void System :: initialize_spin(){
 	return;
 }
 
-void System :: initialize_velocities(){
+void System :: initialize_velocities(){ // Initialize the velocities of the particles
 	if(_restart and _sim_type==0){
 		ifstream cinf;
 		cinf.open("../_INPUT/CONFIG/velocities.in");
@@ -282,7 +282,7 @@ void System :: initialize_velocities(){
 			double vx, vy, vz;
 			for(int i=0; i<_npart; i++){
 				cinf >> vx >> vy >> vz;
-				_particle(i).setvelocity(0,vx);
+				_particle(i).setvelocity(0,vx); // velocities in reduced units
 				_particle(i).setvelocity(1,vy);
 				_particle(i).setvelocity(2,vz);
 			}
@@ -296,15 +296,15 @@ void System :: initialize_velocities(){
 			vx(i) = _rnd.Gauss(0.,sqrt(_temp));	// velocities in reduced units inizialized as sqrt(temperature)	
 			vy(i) = _rnd.Gauss(0.,sqrt(_temp));
 			vz(i) = _rnd.Gauss(0.,sqrt(_temp));
-			sumv(0) += vx(i);
+			sumv(0) += vx(i); 
 			sumv(1) += vy(i);
 			sumv(2) += vz(i);
 		}
-		for (int idim=0; idim<_ndim; idim++) sumv(idim) = sumv(idim)/double(_npart);
+		for (int idim=0; idim<_ndim; idim++) sumv(idim) = sumv(idim)/double(_npart); // sumv contains the total momentum
 
 		double sumv2 = 0.0, scalef;
 		for (int i=0; i<_npart; i++){
-			vx(i) = vx(i) - sumv(0);
+			vx(i) = vx(i) - sumv(0); // Correcting the velocities to have zero total momentum
 			vy(i) = vy(i) - sumv(1);
 			vz(i) = vz(i) - sumv(2);
 			sumv2 += vx(i) * vx(i) + vy(i) * vy(i) + vz(i) * vz(i);
@@ -312,18 +312,18 @@ void System :: initialize_velocities(){
 		sumv2 /= double(_npart);
 		scalef = sqrt(3.0 * _temp / sumv2);	 // velocity scale factor 
 		for (int i=0; i<_npart; i++){
-			_particle(i).setvelocity(0, vx(i)*scalef);
+			_particle(i).setvelocity(0, vx(i)*scalef); // velocities in reduced units
 			_particle(i).setvelocity(1, vy(i)*scalef);
 			_particle(i).setvelocity(2, vz(i)*scalef);
 		}
 	}
 	if(_sim_type == 0){
 	double xold, yold, zold;
-		for (int i=0; i<_npart; i++){
-			xold = this->pbc( _particle(i).getposition(0,true) - _particle(i).getvelocity(0)*_delta, 0);
+		for (int i=0; i<_npart; i++){ // Set the old position for the Verlet algorithm
+			xold = this->pbc( _particle(i).getposition(0,true) - _particle(i).getvelocity(0)*_delta, 0); // xold = x(t-dt)
 			yold = this->pbc( _particle(i).getposition(1,true) - _particle(i).getvelocity(1)*_delta, 1);
 			zold = this->pbc( _particle(i).getposition(2,true) - _particle(i).getvelocity(2)*_delta, 2);
-			_particle(i).setpositold(0, xold);
+			_particle(i).setpositold(0, xold); 
 			_particle(i).setpositold(1, yold);
 			_particle(i).setpositold(2, zold);
 		}
@@ -537,7 +537,7 @@ void System :: initialize_properties(){ // Initialize data members used for meas
 	return;
 }
 
-void System :: save_final_block (int blk) {
+void System :: save_final_block (int blk) { // Save the final block data in a cumulative data file
 	// for Gibbs simulation, save final block data in a cumulative data file
 	double error;
 	if (_sim_type > 1 and blk == _nblocks) {
@@ -596,7 +596,7 @@ void System :: save_final_block (int blk) {
 	}
 }
 
-void System :: finalize(){
+void System :: finalize(){ // Finalize the System object
 	ofstream coutf;
 	coutf.open(_output_dir + "output.dat",ios::app);
 	if (!_equilibration){
@@ -609,8 +609,7 @@ void System :: finalize(){
 	return;
 }
 
-// Write current configuration as a .xyz file in directory ../CONFIG/
-void System :: write_configuration(){
+void System :: write_configuration(){ // Write current configuration as a .xyz file in directory ../CONFIG/
 	ofstream coutf;
 	if(!_equilibration and _sim_type < 2){
 		coutf.open(_output_dir + "/CONFIG/config.xyz");
@@ -634,8 +633,7 @@ void System :: write_configuration(){
 	return;
 }
 
-// Write configuration nconf as a .xyz file in directory ../_phase/CONFIG/
-void System :: write_XYZ(int nconf){
+void System :: write_XYZ(int nconf){ // Write configuration nconf as a .xyz file in directory ../_phase/CONFIG/
 	ofstream coutf;
 	coutf.open(_output_dir + "/CONFIG/config_" + to_string(nconf) + ".xyz");
 	if(coutf.is_open()){
@@ -652,7 +650,7 @@ void System :: write_XYZ(int nconf){
 	return;
 }
 
-void System :: write_velocities(){
+void System :: write_velocities(){ // Write velocities as a .dat file in directory ../CONFIG/
 	ofstream coutf;
 	coutf.open(_output_dir + "/CONFIG/velocities.out");
 	if(coutf.is_open()){
@@ -666,8 +664,7 @@ void System :: write_velocities(){
 	return;
 }
 
-// Read configuration from a .xyz file in directory
-void System :: read_configuration(){
+void System :: read_configuration(){ // Read configuration from a .xyz file in directory
 	ifstream cinf;
 	string comment;
 	string particle;
@@ -788,7 +785,7 @@ void System :: measure(){ // Measure properties
 	return;
 }
 
-void System :: averages(int blk){
+void System :: averages(int blk){ // Accumulate block averages
 
 	ofstream coutf;
 	double average, sum_average, sum_ave2;
@@ -915,24 +912,24 @@ void System :: averages(int blk){
 	return;
 }
 
-double System :: error(double acc, double acc2, int blk){
+double System :: error(double acc, double acc2, int blk){ // Statistical uncertainty estimation
 	if(blk <= 1) return 0.0;
 	else return sqrt( fabs(acc2/double(blk) - pow( acc/double(blk) ,2) )/double(blk) );
 }
 
-int System :: get_nbl(){
+int System :: get_nbl(){ // Return the number of blocks
 	return _nblocks;
 }
 
-int System :: get_nsteps(){
+int System :: get_nsteps(){ // Return the number of steps
 	return _nsteps;
 }
 
-int System :: get_phase(){
+int System :: get_phase(){ // Return the phase of the system
 	return _int_phase;
 }
 
-bool System :: get_equilib () {
+bool System :: get_equilib () { // Return the equilibration status
 	return _equilibration;
 }
 
