@@ -18,7 +18,7 @@ int main () {
    rnd.RandomImplementation();                                          // Initialization of Random generator
 
    int iterations = pow(10,6) ;                                         // total number of random numbers to be drawn
-   int blocks = 100 ;                                                  // number of blocks
+   int blocks = 100 ;                                                  	// number of blocks
 	int blockSize = (int)(iterations/blocks) ;                           // Number of throws in each block
 
    cout << "Working with " << blocks <<" blocks, with "
@@ -69,11 +69,10 @@ int main () {
 			put += std::max(0., K - S_T)* exp (- r * T) ;                         	// Compute put price accordingly
 		}
 
-		call /= blockSize ;                                                      	// Average over the number of throws                                  
+		call /= blockSize ;                                                      // Average over the number of throws                                  
 		put /= blockSize ;
 
 		// Call - block averaging
-
       progressiveSumCall = ((progressiveSumCall * i) + call) / (i + 1);          
 		progressiveSquaredCall = ((progressiveSquaredCall * i) + pow(call, 2)) / (i + 1);
 		errorCall = Error(progressiveSumCall, progressiveSquaredCall, i);
@@ -141,11 +140,10 @@ int main () {
 			put += std::max(0., K - S_T)* exp (- r * T) ;                         	// Compute put price accordingly
 		}
 
-		call /= blockSize ;                                                      	// Average over the number of throws                                  
+		call /= blockSize ;                                                    // Average over the number of throws                                  
 		put /= blockSize ;
 
 		// Call - block averaging
-
       progressiveSumCall = ((progressiveSumCall * i) + call) / (i + 1);          
 		progressiveSquaredCall = ((progressiveSquaredCall * i) + pow(call, 2)) / (i + 1);
 		errorCall = Error(progressiveSumCall, progressiveSquaredCall, i);
