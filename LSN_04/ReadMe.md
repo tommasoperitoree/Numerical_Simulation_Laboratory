@@ -1,14 +1,14 @@
-## How to use my code
+## How to use my code - LSN Exercise 04
 
 ### Equilibration
 
-The equilibration process is taken care of by the bash script `./_INPUT/equilibration_routine.sh` which requires a phase to be chosen for equilibration. Thus to execute:
-- verify that the script is executable by going into `./_INPUT` and running `chmod +x equilibration_routine.sh`
+The equilibration process is taken care of by the bash script `equilibration_routine.sh` which requires a phase to be chosen for equilibration. Thus to execute:
+- verify that the script is executable by going into `LSN_04/4.1/_INPUT` and running `chmod +x equilibration_routine.sh`
 - execute with a choice of phase with `./equilibration_routine.sh <phase>` where inputs can be {Gas, Liquid, Solid}. The compiling of the code is taken care of automatically by the bash script
 
 ### Simulation
 
-The compilation of the simulation itself is slightly different. Go into `./_SOURCE` and
+The compilation of the simulation itself is slightly different. Go into `LSN_04/4.1/_SOURCE` and
 - to compile hit `make`
 - to remove `*.o` and `*.exe` files, hit `make clean`
 - to remove all data produced from previous simulations, hit `make remove`
