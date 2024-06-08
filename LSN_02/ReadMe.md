@@ -1,4 +1,4 @@
-## How to use my code
+## How to use my code - LSN Exercise 02
 
 Each of the subsections of the exercise have been tackled in a different directory, namely `./2.1` and `/2.2`.
 <br>In each dir you will find a `main.cpp` with the code and the output files are `*.dat` 
