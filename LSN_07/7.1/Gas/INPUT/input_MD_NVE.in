@@ -1,4 +1,4 @@
-SIMULATION_TYPE        	0 1 0 
+SIMULATION_TYPE        	0 1 0
 TEMP 							0.95
 RESTART                	0
 NPART                  	108

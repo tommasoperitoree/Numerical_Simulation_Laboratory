@@ -177,7 +177,6 @@ void System :: initialize(string input_dir){ // Initialize the System object acc
 			if(_sim_type == 1){
 				input >> _int_phase;
 				input >> _autocorrelation;
-				input >> _gofr;
 				_equilibration = false;
 				if (_int_phase == 1) _phase = "Gas";
 				else if (_int_phase == 2) _phase = "Liquid";
@@ -201,8 +200,6 @@ void System :: initialize(string input_dir){ // Initialize the System object acc
 				_output_dir = "../" + _phase + "/MD_NVE/EQUILIBRATION/" + temp_string + "_" ;
 			} else if(_sim_type == 1 and _autocorrelation and !_gofr){
 				_output_dir = "../" + _phase + "/MC_NVT/AUTOCORRELATION/";
-			}else if(_sim_type == 1 and _gofr and !_autocorrelation){
-				_output_dir = "../" + _phase + "/MC_NVT/GOFR/";
 			} else if (_sim_type == 0) {
 				_output_dir = "../" + _phase +"/MD_NVE/";
 			} else if (_sim_type == 1) {
