@@ -30,7 +30,7 @@ double evalPotential(double x, double a, double b){
  * @param sigma The standard deviation of the Gaussian distribution.
  * @return The value of the Gaussian function at the given position.
  */
-double evalGauss (double x, double mu, double sigma){
+double evalGauss (double x, double mu, double sigma){	
 
 	double sigma2 = pow(sigma,2) ;
 	return exp(-(pow(x-mu,2)/(2*sigma2))) ;
