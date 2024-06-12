@@ -23,10 +23,11 @@ int main () {
 	double mu = 0.;
 	double sigma = 1.;
 	double muBest = mu, sigmaBest = sigma;
+	double muOld = mu, sigmaOld = sigma;
    
 	// annealing
    double energy = 1.;
-   double currentEnergy = energy;
+   double energyOld = energy;
 	double bestEnergy = energy;
 
 	double position = 0.;
@@ -50,17 +51,9 @@ int main () {
 
 	while (T >= TMin) {
 
-		double muOld = mu;
-     	double sigmaOld = sigma;
-
 		// update parameters
-		mu = abs(muOld + rand.Rannyu(-1.,1.) * 0.5 * 1./beta) ;
-		sigma = abs(sigmaOld + rand.Rannyu(-1.,1.) * 0.25 * (1./beta)) ; 
-		
-		// trial parameters
-		//mu = abs(muOld + rand.Rannyu(-1.,1.) * 1./beta) ;
-		//sigma = abs(sigmaOld + rand.Rannyu(-1.,1.) * (1./beta)) ; 
-		
+		mu = abs(muOld + rand.Rannyu(-1.,1.) * 0.5 * T) ;
+		sigma = abs(sigmaOld + rand.Rannyu(-1.,1.) * 0.25 * T) ; 		
 
 		integral = 0;
 		double accumulative = 0., accumulativeSquared = 0.;
@@ -90,13 +83,14 @@ int main () {
 
 		}
 
-		currentEnergy = progressiveSum ;
-
-		double acceptance = min(1., (exp(- beta * (currentEnergy - energy))));
+		energy = progressiveSum;
+		double acceptance = min(1., (exp(- beta * (energy - energyOld))));
 	
-		if (rand.Rannyu() < acceptance)
-         energy = currentEnergy;
-      else {
+		if (rand.Rannyu() < acceptance){
+			energyOld = energy;
+			muOld = mu; 
+			sigmaOld = sigma;
+      } else {
          mu = muOld;
          sigma = sigmaOld;
       }
@@ -112,6 +106,7 @@ int main () {
 		step += 1;
 		T *= 0.997 ;
       beta = 1. / T;
+
       if (bestEnergy > energy) {
          bestEnergy = energy;
          muBest = mu;
