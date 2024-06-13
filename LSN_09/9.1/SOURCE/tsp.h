@@ -69,9 +69,7 @@ class TSP {
 		void operate_mutations (int i_travel) ;
 		void cross_over (int i_travel, int j_travel);
 		void evolution ();
-
-		void mutation_check_debug ();
-		int get_n_generations () { return _n_generations;};
 		void finalize ();
+		int get_n_generations () { return _n_generations;};
 
 };

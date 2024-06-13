@@ -9,13 +9,6 @@
 using namespace std;
 
 /**
- * This file contains the implementation of the TSP (Traveling Salesman Problem) class.
- * It includes the necessary headers, defines the class methods, and initializes the TSP parameters.
- * The TSP class handles the initialization of cities, population, and loss evaluation.
- * It also includes mutation and crossover methods for solving the TSP.
- */
-
-/**
  * Initializes the TSP (Traveling Salesman Problem) simulation.
  * 
  * This function reads input from a file and initializes the necessary variables and data structures
@@ -244,8 +237,6 @@ void TSP :: weight_evaluation() {
 		// cout << i_travel << ": loss = " << _loss.at(0, i_travel) << " weight = " << _loss.at(1,i_travel) << endl;
 		// if (i_travel < evaluation_range) loss_avg += _loss.at(0, i_travel);	
 	}
-	// loss_avg /= evaluation_range;
-	// cout << "loss average = " << loss_avg << endl;
 	return;
 }
 
@@ -335,8 +326,6 @@ void TSP :: swap_elements(int &i, int &j) {
 	j = temp;
 	return;
 }
-
-// methods to apply mutations to the population
 
 /**
  * Performs a pair permutation on the selected row of the population matrix.
@@ -587,17 +576,15 @@ void TSP :: cross_over (int i_travel, int j_travel) {
 	return ;
 }
 
-// to be deleted once code is done 
-void TSP :: mutation_check_debug () {
-	for (int i=0; i<10001; i++){
-		int travel_pick = _rand.Rannyu()*_population_size; cout << endl;
-		int second_pick = _rand.Rannyu()*_population_size; cout << endl;
-		cout << "mutation " << i << endl; cout << endl;
-		cross_over(travel_pick,second_pick);
-	}
-	return ;
-}
 
+/**
+ * @brief the evolution process for the TSP problem.
+ * 
+ * This function generates a new generation of solutions by applying selection and crossover operators
+ * until the desired population size is reached. It then updates the population with the new generation,
+ * clears the new generation, and evaluates the loss of each solution in the population.
+ * Finally, it writes the completion message to the output file.
+ */
 void TSP :: evolution () {
 
 	_new_generation.resize(_n_cities,0);
@@ -624,6 +611,9 @@ void TSP :: evolution () {
 	return ;
 }
 
+/**
+ * @brief Finalizes the TSP simulation by saving the random seed and writing a completion message to the output file.
+ */
 void TSP :: finalize () {
 	_rand.SaveSeed();
 	ofstream coutf;

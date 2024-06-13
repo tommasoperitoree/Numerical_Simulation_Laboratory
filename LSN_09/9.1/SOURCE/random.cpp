@@ -19,9 +19,6 @@ using namespace std;
 Random :: Random(){}
 // Default constructor, does not perform any action
 
-Random :: ~Random(){}
-// Default destructor, does not perform any action
-
 void Random :: SaveSeed(){
    // This function saves the current state of the random number generator to a file "seed.out"
    ofstream WriteSeed;
