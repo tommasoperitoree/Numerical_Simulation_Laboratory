@@ -126,7 +126,6 @@ int TSP :: boundary_condition_no_zero(int i_city) {
 	return i_city;
 }
 
-
 /**
  * Initializes the positions of the cities.
  */
@@ -218,7 +217,7 @@ void TSP :: loss_evaluation() {
 		_loss.at(0, i_travel) = loss_function(i_travel);
 	
 	this->order_by_loss();
-	this->weight_evaluation();
+	this->fitness_evaluation();
 
 	return;
 }
@@ -226,7 +225,7 @@ void TSP :: loss_evaluation() {
 /**
  * Evaluates the weights for each travel in the population.
  */
-void TSP :: weight_evaluation() {
+void TSP :: fitness_evaluation() {
 	double loss_norm = 0; // normalization factor for the weights
 	// double loss_avg = 0;
 	// int evaluation_range = 5;
@@ -239,7 +238,6 @@ void TSP :: weight_evaluation() {
 	}
 	return;
 }
-
 
 /**
  * Orders the population by loss value in ascending order.
@@ -287,17 +285,26 @@ void TSP :: cities_details_print() {
  * @param i_travel The index of the travel.
  */
 void TSP :: output_best_travel(int gen_count) {
-	ofstream couttrv(_output_path + "/GEN_BEST/best_travel_gen" + to_string(gen_count) + ".dat");
-	couttrv << "# CITY: \t\t POSITION X: \t POSITION Y: " << endl;
+	ofstream couttrv(_output_path + "/fittest.dat", ios::app);
+	if (gen_count==0)
+		couttrv << "# CITIES INDEX:" << endl;
 	
 	arma::Col<int> travel = _population.col(0);
 	for (int i = 0; i < _n_cities; i++) {
 		int index = travel(i);
-		vec pos = _cities(index).return_location();
-		couttrv << setw(6) << index
-				 << setw(18) << pos(0)
-				 << setw(15) << pos(1) << endl;
+		couttrv << setw(6) << index << endl;
 	}
+	couttrv << endl;
+
+	ofstream coutls(_output_path + "/loss.dat", ios::app);
+	if (gen_count==0)
+		coutls << "# BEST DISTANCE:" << endl;
+	coutls << setw(6) << gen_count
+			 << setw(16) << _loss.at(0,0) << endl;
+
+	coutls.close();
+	couttrv.close();
+
 	return;
 }
 
@@ -575,7 +582,6 @@ void TSP :: cross_over (int i_travel, int j_travel) {
 
 	return ;
 }
-
 
 /**
  * @brief the evolution process for the TSP problem.

@@ -59,7 +59,7 @@ class TSP {
 		void swap_travels (int i_travel, int j_travel);
 		void cities_details_print ();
 		void output_best_travel (int gen_count);
-		void weight_evaluation ();
+		void fitness_evaluation ();
 		int selection_operator ();
 		void swap_elements (int &i, int &j);
 		void pair_permutation (int i_travel);

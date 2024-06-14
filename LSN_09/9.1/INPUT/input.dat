@@ -1,4 +1,4 @@
-TSP_TYPE						0
+TSP_TYPE						1
 NORM_ORDER					2
 WEIGHT_POWER				7
 N_CITIES						34
