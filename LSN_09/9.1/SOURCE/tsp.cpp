@@ -485,7 +485,7 @@ void TSP :: order_inversion (int i_travel) {
  * @brief Performs mutations on a given travel path.
  * 
  * This function applies different mutation operations to a given travel path based on the probabilities defined in _prob_mutations.
- * The mutation operations include pair permutation, block shift, block permutation, and order inversion.
+ * The mutation operations include pair permutation, block shift, block permutation, and order inversion, all defined above.
  * 
  * @param i_travel The index of the travel path to operate mutations on.
  */
