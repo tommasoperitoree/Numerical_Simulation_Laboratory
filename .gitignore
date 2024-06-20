@@ -258,5 +258,6 @@ pyrightconfig.json
 
 # Personal
 /LSN_Material/
+/LSN_12_parallel_tries/
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,cmake,c++,python,jupyternotebooksS
