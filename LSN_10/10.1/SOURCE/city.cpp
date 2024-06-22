@@ -24,7 +24,7 @@ City :: City (){
  * @param location The vector representing the location of the city.
  * @param dimension The dimension of the location vector.
  */
-void City :: set_location (vec location, int dimension) {
+void City :: set_location (arma::Row<double> location, int dimension) {
 	if (dimension == _dimension)
 		_location = location ;
 	else cerr << "ERROR : uncompatible location dimension" << endl ;	
@@ -38,6 +38,6 @@ void City :: set_location (vec location, int dimension) {
  * 
  * @return The location of the city as a vector.
  */
-vec City :: return_location () {
+arma::Row<double> City :: return_location () {
 	return _location ;
 }

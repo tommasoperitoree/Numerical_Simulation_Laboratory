@@ -19,12 +19,13 @@ using namespace std;
  * After initializing the necessary variables, it calls other methods to initialize the cities' positions,
  * create the starting population, and order the population by loss.
  */
-void TSP :: initialize() {
+void TSP :: initialize (int rank) {
 	// Initialize the random number generator
-	_rand.RandomImplementation();
+	_rand.RandomImplementation(rank);
 	std::ifstream input("../INPUT/input.dat");
 	std::ofstream coutf;
 	std::string property;
+	_rank = rank;
 	while (!input.eof()) {
 		input >> property;
 		if (property == "TSP_TYPE") {
@@ -33,34 +34,34 @@ void TSP :: initialize() {
 				std::cerr << "PROBLEM: unknown simulation type" << std::endl;
 				exit(EXIT_FAILURE);
 			}
-			if (_tsp_type == 0) {
+			if (_tsp_type == 0 and _rank == 0) {
 				_output_path = "../OUTPUT/Circle/";
 				coutf.open(_output_path + "output.dat");
 				coutf << "GENETIC ALGORITHM WITH CITIES AROUND CIRCUMFERENCE" << std::endl;
-			} else if (_tsp_type == 1) {
+			} else if (_tsp_type == 1 and _rank == 0) {
 				_output_path = "../OUTPUT/Square/";
 				coutf.open(_output_path + "output.dat");
 				coutf << "GENETIC ALGORITHM WITH CITIES INSIDE A SQUARE" << std::endl;
 			}
-		} else if (property == "N_MIGRATIONS") {
-			input >> _n_migrations;
-			coutf << "Number of migrations = " << _n_migrations << std::endl;
+		} else if (property == "MIGRATION_STEP") {
+			input >> _migration_step;
+			if (_rank == 0) coutf << "Number of migrations = " << _migration_step << std::endl;
 		} else if (property == "NORM_ORDER") {
 			input >> _norm_order;
-			coutf << "Norm order = " << _norm_order << std::endl;
+			if (_rank == 0) coutf << "Norm order = " << _norm_order << std::endl;
 		} else if (property == "N_CITIES") {
 			input >> _n_cities;
 			_cities.set_size(_n_cities);
-			coutf << "Number of cities = " << _n_cities << std::endl;
+			if (_rank == 0) coutf << "Number of cities = " << _n_cities << std::endl;
 		} else if (property == "N_INDIVIDUALS") {
 			input >> _population_size;
-			coutf << "Population size = " << _population_size << std::endl;
+			if (_rank == 0) coutf << "Population size = " << _population_size << std::endl;
 		} else if (property == "WEIGHT_POWER") {
 			input >> _weight_power;
-			coutf << "Weight power = " << _weight_power << std::endl;
+			if (_rank == 0) coutf << "Weight power = " << _weight_power << std::endl;
 		} else if (property == "N_GENERATIONS") {
 			input >> _n_generations;
-			coutf << "Number of generations = " << _n_generations << std::endl;
+			if (_rank == 0) coutf << "Number of generations = " << _n_generations << std::endl;
 		} else if (property == "PROB_MUTATIONS") {
 			input >> _prob_size;
 			double prob;
@@ -70,9 +71,9 @@ void TSP :: initialize() {
 				//cout << "prob " << i << " = " << prob << endl;
 				_prob_mutations = arma::join_vert(_prob_mutations, arma::Col<double>({prob}));
 			}
-			coutf << "Probabilities of mutations = " << _prob_mutations.t() << std::endl;
+			if (_rank == 0) coutf << "Probabilities of mutations = " << _prob_mutations.t() << std::endl;
 		} else if (property == "ENDINPUT") {
-			coutf << "Reading input completed!" << std::endl;
+			if (_rank == 0) coutf << "Reading input completed!" << std::endl;
 			break;			
 		} else {
 			std::cerr << "PROBLEM: unknown input" << std::endl;
@@ -87,12 +88,13 @@ void TSP :: initialize() {
 		std::cerr << "ERROR: Invalid _n_cities or _population_size" << std::endl;
 		return;
 	}
-	coutf << "System initialized!" << std::endl;
+	if (_rank == 0) coutf << "System initialized!" << std::endl;
 	coutf.close();
-	// Ensure the following methods are defined and working correctly
-	this->initialize_cities_position();
-	this->initialize_starting_population();
-	this->order_by_loss();
+	if (_rank == 0) {
+		this->initialize_cities_position();
+		this->initialize_starting_population();
+		this->order_by_loss();
+	}
 }
 
 /**
@@ -102,7 +104,7 @@ void TSP :: initialize() {
  * @return The distance between the two cities.
  */
 double TSP :: distance(int i_city, int i_travel) {
-	vec distance = _cities(_population.at(i_city, i_travel)).return_location() - 
+	arma::Row<double> distance = _cities(_population.at(i_city, i_travel)).return_location() - 
 						_cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location();
 	return arma::norm(distance, _norm_order);
 }
@@ -133,18 +135,21 @@ int TSP :: boundary_condition_no_zero(int i_city) {
  * Initializes the positions of the cities.
  */
 void TSP :: initialize_cities_position() {
-	vec position;
+	arma::Row<double> position;
 	position.resize(_dimension);
+	// cout << "Initializing cities position..." << endl;
 
 	for (int i_city = 0; i_city < _n_cities; i_city++) {
 		if (_tsp_type == 0) { // cities position on a circumference of unit radius
 			double theta = _rand.Theta();
 			position(0) = cos(theta);
 			position(1) = sin(theta);
+			// position.print();
 			_cities(i_city).set_location(position, position.size());
 		} else { // _tsp_type == 1 i.e. cities position inside a square of side 2
 			position(0) = _rand.Rannyu(-1., 1.);
 			position(1) = _rand.Rannyu(-1., 1.);
+			// position.print();
 			_cities(i_city).set_location(position, position.size());
 		}
 	}
@@ -154,6 +159,38 @@ void TSP :: initialize_cities_position() {
 	cities_details_print();
 
 	return;
+}
+
+void TSP :: set_cities_position (arma::Mat<double> cities_position) {
+	arma::Row<double> position;
+	position.resize(_dimension);
+
+	for (int i_city = 0; i_city < _n_cities; i_city++) {
+		for (int i_dim = 0; i_dim < _dimension; i_dim++) 
+			position(i_dim) = cities_position(i_city, i_dim);
+		_cities(i_city).set_location(position, position.size());
+	}
+	
+	if (_rank == 0) {
+		ofstream coutf;
+		coutf.open(_output_path + "output.dat", ios::app);
+		coutf << "Cities position initialized!" << endl;
+		cities_details_print();
+	}
+
+	return;
+}
+
+arma::Mat<double> TSP :: get_cities_position () {
+	arma::Mat<double> cities_position;
+	cities_position.resize(_n_cities, _dimension);
+	// cout << "TSP, Cities position dimensions: " << cities_position.n_rows << "x" << cities_position.n_cols << endl;
+
+	for (int i_city = 0; i_city < _n_cities; i_city++) 
+		cities_position.row(i_city) = _cities(i_city).return_location();
+
+	// cities_position.print();
+	return cities_position;
 }
 
 /**
@@ -191,7 +228,7 @@ void TSP :: initialize_starting_population() {
  */
 void TSP :: check_constraints(arma::Col<int> travel) {
 	set<int> num_set;
-	for (int i_city = 0; i_city < travel.n_elem; i_city++) {
+	for (int i_city = 0; i_city < int(travel.n_elem); i_city++) {
 		if (!num_set.insert(travel(i_city)).second) {
 			cerr << "ERROR: duplicate city within an individual" << endl;
 			exit(EXIT_FAILURE);
@@ -211,6 +248,18 @@ double TSP :: loss_function(int i_travel) {
 
 	return loss;
 }
+/*
+double TSP :: loss_function(arma::Col<int> travel) {
+	double loss = 0.;
+	vec distance (_n_cities);
+	for (int i_city = 0; i_city < _n_cities; i_city++){
+		distance = _cities(travel(i_city)).return_location() -
+					  _cities(boundary_condition(i_city+1)).return_location() ;
+		loss += arma::norm(distance, _norm_order) ;
+	}
+
+	return loss;
+}*/
 
 /**
  * Evaluates the loss function for each travel in the population.
@@ -275,7 +324,7 @@ void TSP :: cities_details_print() {
 	ofstream coutcit(_output_path + "cities_details.dat");
 	coutcit << "# CITY: \t\t POSITION X: \t POSITION Y: " << endl;
 	for (int i = 0; i < _n_cities; i++) {
-		vec pos = _cities(i).return_location();
+		arma::Row<double> pos = _cities(i).return_location();
 		coutcit << setw(6) << i
 				<< setw(18) << pos(0)
 				<< setw(15) << pos(1) << endl;
@@ -289,7 +338,7 @@ void TSP :: cities_details_print() {
  */
 void TSP :: output_best_travel(int gen_count) {
 	ofstream couttrv(_output_path + "/fittest.dat", ios::app);
-	if (gen_count==0)
+	if (gen_count==0 or gen_count==_migration_step)
 		couttrv << "# CITIES INDEX:" << endl;
 	
 	arma::Col<int> travel = _population.col(0);
@@ -300,7 +349,7 @@ void TSP :: output_best_travel(int gen_count) {
 	couttrv << endl;
 
 	ofstream coutls(_output_path + "/loss.dat", ios::app);
-	if (gen_count==0)
+	if (gen_count==0 or gen_count==_migration_step)
 		coutls << "# BEST DISTANCE:" << endl;
 	coutls << setw(6) << gen_count
 			 << setw(16) << _loss.at(0,0) << endl;
@@ -311,12 +360,36 @@ void TSP :: output_best_travel(int gen_count) {
 	return;
 }
 
-int* TSP :: get_best_travel() {
-    int* arr = new int[_n_cities]; // Dynamically allocate memory for the array
-    for (int i = 0; i < _n_cities; ++i) {
-        arr[i] = _population.at(i, 0);
-    }
-    return arr;
+void TSP :: output_best_travel_migr (int gen_count, arma::Col<int> migrator, double loss) {
+	ofstream couttrv(_output_path + "/fittest.dat", ios::app);
+	if (gen_count==0 or gen_count==_migration_step)
+		couttrv << "# CITIES INDEX:" << endl;
+	
+	for (int i = 0; i < _n_cities; i++) {
+		int index = migrator(i);
+		couttrv << setw(6) << index << endl;
+	}
+	couttrv << endl;
+
+	ofstream coutls(_output_path + "/loss.dat", ios::app);
+	if (gen_count==0 or gen_count==_migration_step)
+		coutls << "# BEST DISTANCE:" << endl;
+	
+	coutls << setw(6) << gen_count
+			 << setw(16) << loss << endl;
+
+	coutls.close();
+	couttrv.close();
+
+	return;
+}
+
+arma::Col<int> TSP :: get_best_travel() {
+    return _population.col(0);
+}
+
+void TSP :: set_best_travel(arma::Col<int> migrator) {
+	_population.col(0) = migrator ;
 }
 
 /**
@@ -502,7 +575,7 @@ void TSP :: order_inversion (int i_travel) {
  */
 void TSP :: operate_mutations (int i_travel) {
 	
-	for (int i=1; i<_prob_mutations.size(); i++){
+	for (int i=1; i<int(_prob_mutations.size()); i++){
 		double prob = _rand.Rannyu();
 		if (prob < _prob_mutations(i)){
 			switch (i){
@@ -549,7 +622,7 @@ void TSP :: cross_over (int i_travel, int j_travel) {
 	arma::Col<int> child_1 = parent_1.subvec(0,crossover_index-1), child_2 = parent_2.subvec(0,crossover_index-1);
 	
 	set<int> child_1_set, child_2_set;
-	for(int i=0; i<child_1.size(); i++){ // filling the sets with the cities already in the children
+	for(int i=0; i<int(child_1.size()); i++){ // filling the sets with the cities already in the children
 		child_1_set.insert(child_1(i));
 		child_2_set.insert(child_2(i));
 	}
@@ -609,9 +682,9 @@ void TSP :: evolution () {
 	do {
 		int parent_1 = selection_operator();
 		int parent_2 = selection_operator();
-		cross_over(parent_1,parent_2);
+		cross_over(parent_1,parent_2); // operate crossover and then mutations on new child
 		// cout << "new generation size " << _new_generation.n_cols << endl;
-	} while (_new_generation.n_cols < _population_size);
+	} while (int(_new_generation.n_cols) < _population_size);
 
 	_population = _new_generation;
 	_new_generation.resize(0,0);

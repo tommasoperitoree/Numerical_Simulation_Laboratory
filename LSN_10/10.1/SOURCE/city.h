@@ -17,7 +17,7 @@ using namespace arma;
 class City {
 	private:
 		const int _dimension = 2;	// Dimensionality of the system
-		vec _location;				// Location of the city
+		arma::Row<double> _location;				// Location of the city
 
 	public:
 		/**
@@ -31,12 +31,13 @@ class City {
 		 * @param location The location of the city as a vector.
 		 * @param dimension The dimensionality of the system.
 		 */
-		void set_location(vec location, int dimension);
+		void set_location(arma::Row<double> location, int dimension);
 
 		/**
 		 * @brief Returns the location of the city.
 		 * 
 		 * @return The location of the city as a vector.
 		 */
-		vec return_location();
+		arma::Row<double> return_location();
+		int get_dimension() {return _dimension; };
 };

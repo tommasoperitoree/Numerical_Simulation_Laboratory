@@ -8,12 +8,13 @@
 #include "tsp.h"
 #include "armadillo"
 
-#include "mpi.h"
+#include "mpi.h" // parallelization
+
 
 using namespace std ;
+using namespace arma ;
 
-
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[]) {
 
 	int size, rank;
 
@@ -21,55 +22,94 @@ int main(int argc, char* argv[]){
 
 	MPI_Comm_size(MPI_COMM_WORLD, &size); 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Status stat;
+	MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+	// int mpi_error_code;
 
 	TSP tsp ;
-	tsp.initialize() ;
-	Random rnd; rnd.RandomImplementation();
+	tsp.initialize(rank) ; // initialize the seed of the rnd as the rank
+	Random rnd; 
+	rnd.RandomImplementation();
 
-	// variables needed for exchange of best travel among nodes
-	int* migrator = new int (tsp.get_n_cities()); 
+	// variables needed all initialized before the loops
+	arma::Mat<double> cities_position ;
+	int n_cities = tsp.get_n_cities(), dimension = tsp.get_dimension();
+	cities_position.resize(n_cities, dimension);	
+	
+	arma::Mat<int> migrators_mat;
+	arma::Col<int> migrator ;
+	migrator.resize(n_cities) ;
+	migrators_mat.resize(n_cities,size);
+	
+	double i_loss ;
+	arma::Col<double> loss_vec;
+	if ( rank == 0 ) loss_vec.resize(size);
 
-	int i_sender, i_receiver, i_tag;
-	int n_cities = tsp.get_n_cities() ;
-	int n_migrations = tsp.get_n_migrations() ;
+	// parameters
+	int generations = tsp.get_n_generations() ;
+	int migration_step = tsp.get_migration_step() ;
+	int min_loss_rank ;
 
+	// ------------ normalize cities positions for all ranks ------------ // 
+	if (rank == 0) { // rank 0 has the initialisation of the cities
+      cities_position = tsp.get_cities_position();
+      // cities_position.print("Cities Position:");
+   }
+	// now they all get the cities position
+	MPI_Bcast(cities_position.memptr(), cities_position.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);	
 
-	for (int gen=0; gen<n_migrations; gen++) {
+	if (rank != 0) { // other ranks set the cities position and can now initialize the starting population
+		tsp.set_cities_position(cities_position) ;
+		tsp.initialize_starting_population() ;
+		tsp.order_by_loss() ;
+	}
+
+	// --------------------------- evolution --------------------------- //
+
+	// cout << "Rank " << rank << " starting evolution" << endl;
+
+	for (int gen=0; gen<generations; gen++) {
 		tsp.evolution() ;
-		// tsp.output_best_travel(g);
+		// cout << "Rank " << rank << " finished evolution on gen " << gen << endl;
+		// MPI_Barrier(MPI_COMM_WORLD);
 
-		if(! gen % n_migrations ) {	// exchange of best travel among nodes once every n_migrations
-			i_tag = gen + 1 ;
-			// rank 0 chooses the nodes that will exchange the best travel			
-			if (rank == 0){
-				i_sender = int(rnd.Rannyu(0, size)) ;
-					do{
-						i_receiver = int(rnd.Rannyu(0, size)) ;
-						cout << "i_sender = " << i_sender << ", i_receiver = " << i_receiver << endl ;
-					} while (i_receiver == i_sender) ; // don't send to yourself
+		if ( (gen % migration_step) == 0 and gen != 0){
+			// Synchronize all processes before checking for migration step
+			if (rank == 0) cout << endl << "Starting migration on gen " << gen << endl << endl;
+			migrator = tsp.get_best_travel() ;
+			i_loss = tsp.get_best_loss() ;
+			// all nodes send to rank 0 their best travel
+			// MPI_Barrier(MPI_COMM_WORLD);
+			MPI_Gather(migrator.memptr(), migrator.size(), MPI_INTEGER, migrators_mat.memptr(), migrator.size(), MPI_INTEGER, 0, MPI_COMM_WORLD) ;
+			MPI_Gather(&i_loss, 1, MPI_DOUBLE, loss_vec.memptr(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD) ;
+
+			if (rank == 0) { // have rank 0 save best overall travel and shuffle the matrix
+				// cout << "matrix and loss vec for gen " << gen << endl; 
+				//migrators_mat.print(); cout << endl;
+				//loss_vec.print();
+				min_loss_rank = arma::index_min(loss_vec);
+				tsp.output_best_travel_migr(gen,migrators_mat.col(min_loss_rank),loss_vec(min_loss_rank));
+				// finally shuffle
+				migrators_mat = arma::shuffle(migrators_mat, 1) ;
 			}
 
-			// rank 0 broadcasts the indices of the nodes that will exchange the best travel
-			MPI_Bcast(&i_sender, 1, MPI_INTEGER, 0, MPI_COMM_WORLD) ;
-			MPI_Bcast(&i_receiver, 1, MPI_INTEGER, 0, MPI_COMM_WORLD) ;
+			// now they all get the reshuffled matrix
+			MPI_Bcast(migrators_mat.memptr(), migrators_mat.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-			if (rank == i_sender){ // sender sends
-				migrator = tsp.get_best_travel() ;
-				MPI_Send(migrator, n_cities, MPI_INTEGER, i_receiver, i_tag, MPI_COMM_WORLD);
-			}
-         if(rank == i_receiver){ // receiver receives
-            MPI_Recv(migrator, n_cities, MPI_INTEGER, i_sender, i_tag, MPI_COMM_WORLD, &stat);
-				tsp.set_best_travel(migrator) ; // function to be written still
-            }
-			// need to forcefully recalculate losses as the population is modified for the receiver
+			// each rank now has the whole matrix, the coloumn corresponding to its rank is its new given best travel
+			migrator = migrators_mat.col(rank) ;
+			migrator.print("migrator for rank " + to_string(rank));
+			tsp.set_best_travel(migrator) ; migrator.clear(); migrators_mat.clear();
+			// cout << "Rank " << rank << " saved new best travel" << endl ;
+			tsp.loss_evaluation(); // need to recalculate all losses of the population with the new element
+			// cout << "Rank " << rank << " finished migration on gen " << gen << endl;
 		}
-		// if I want to print the best travel at each generation I need to add a function to check amongst nodes which one has the best travel	
+		// migrator.clear(); 
+		// migrators_mat.clear() ;
 
 	}
 
-	tsp.finalize() ;
 
+	tsp.finalize() ;
 	MPI_Finalize();
 
    return 0;

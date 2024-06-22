@@ -1,0 +1,18 @@
+GENETIC ALGORITHM WITH CITIES INSIDE A SQUARE
+Number of migrations = 4
+Norm order = 2
+Weight power = 7
+Number of cities = 34
+Population size = 2000
+Number of generations = 500
+Probabilities of mutations =    0.7000   0.0600   0.1000   0.0600   0.6000
+
+Reading input completed!
+System initialized!
+Cities position initialized!
+Initial population created!
+Evolution 1 completed!
+Evolution 2 completed!
+Evolution 3 completed!
+Evolution 4 completed!
+Evolution 5 completed!

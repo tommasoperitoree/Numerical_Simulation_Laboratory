@@ -29,6 +29,7 @@ public:
   void SetRandom(int * , int, int);
   // initialization
   void RandomImplementation();
+  void RandomImplementation(int rank);
   // Method to save the seed to a file
   void SaveSeed();
   // Method to generate a random number in the range [0,1)

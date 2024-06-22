@@ -27,7 +27,7 @@ class TSP {
 		const int _count_loss = 2; /* The number of loss parameters (actual loss, weight). */
 
 		int _n_cities; /* The number of cities. */
-		int _n_migrations; /* The number of evolutions before migration, i.e. exchange of best travel among cores. */
+		int _migration_step; /* The number of evolutions before migration, i.e. exchange of best travel among cores. */
 		double _norm_order; /* The order of the norm used to calculate distances. */
 		double _weight_power; /* The power used when evaluating weight. Higher means that fitter indivuals are more dominant*/
 		int _population_size; /* The size of the population. */
@@ -44,14 +44,16 @@ class TSP {
 		arma::Mat<int> _new_generation; /* The new generation matrix. */
 		arma::field<City> _cities; /* The field of cities. */
 		Random _rand; /* The random number generator. */
+		int _rank; /* The rank of the core. */
 
 	public:
 
-		void initialize ();
+		void initialize (int rank);
 		void initialize_cities_position ();
 		void initialize_starting_population ();
 		double distance (int i_city, int i_travel);
 		double loss_function (int i_travel);
+		// double loss_function (arma::Col<int> travel); // maybe unused
 		void loss_evaluation ();
 		int boundary_condition (int i_city);
 		int boundary_condition_no_zero (int i_city);
@@ -60,7 +62,9 @@ class TSP {
 		void swap_travels (int i_travel, int j_travel);
 		void cities_details_print ();
 		void output_best_travel (int gen_count);
-		int* get_best_travel ();
+		void output_best_travel_migr (int gen_count, arma::Col<int> migrator, double loss);
+		arma::Col<int> get_best_travel();
+		void set_best_travel(arma::Col<int> migrator);
 		void fitness_evaluation ();
 		int selection_operator ();
 		void swap_elements (int &i, int &j);
@@ -73,7 +77,11 @@ class TSP {
 		void evolution ();
 		void finalize ();
 		int get_n_generations () { return _n_generations;};
-		int get_n_migrations () { return _n_migrations;};
+		int get_migration_step () { return _migration_step;};
 		int get_n_cities () { return _n_cities;};
-
+		double get_best_loss () { return _loss(0,0);};
+		int get_dimension () {return _dimension; };
+		void set_cities_position (arma::Mat<double> cities_position);
+		arma::Mat<double> get_cities_position ();
+		
 };
