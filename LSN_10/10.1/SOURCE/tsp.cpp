@@ -43,7 +43,7 @@ void TSP :: initialize (int rank) {
 					coutf.open(_output_path + "output.dat");
 					coutf << "GENETIC ALGORITHM WITH CITIES AROUND CIRCUMFERENCE" << endl;
 				}
-				_n_cities = 34;
+				//_n_cities = 34;
 			} if (_tsp_type == 1) {
 				_output_path = "../OUTPUT/SQUARE/";
 				if (_migration) _output_path = _output_path + "MIGRATIONS/";
@@ -52,7 +52,7 @@ void TSP :: initialize (int rank) {
 					coutf.open(_output_path + "output.dat");
 					coutf << "GENETIC ALGORITHM WITH CITIES INSIDE A SQUARE" << endl;
 				}
-				_n_cities = 34;
+				// _n_cities = 34;
 			} else if (_tsp_type == 2) {
 				_output_path = "../OUTPUT/PROVINCES/";
 				if (_migration) _output_path = _output_path + "MIGRATIONS/";
@@ -61,7 +61,7 @@ void TSP :: initialize (int rank) {
 					coutf.open(_output_path + "output.dat");
 					coutf << "GENETIC ALGORITHM WITH ITALIAN PROVINCES" << endl;
 				}
-				_n_cities = 110;
+				// _n_cities = 110;
 			}
 		} else if (property == "MIGRATION_STEP") {
 			input >> _migration_step;
@@ -69,6 +69,10 @@ void TSP :: initialize (int rank) {
 		} else if (property == "NORM_ORDER") {
 			input >> _norm_order;
 			if (_rank == 0) coutf << "Norm order = " << _norm_order << endl;
+		} else if (property == "N_CITIES") {
+			input >> _n_cities;
+			_cities.set_size(_n_cities);
+			coutf << "Number of cities = " << _n_cities << std::endl;
 		} else if (property == "N_INDIVIDUALS") {
 			input >> _population_size;
 			if (_rank == 0) coutf << "Population size = " << _population_size << endl;
