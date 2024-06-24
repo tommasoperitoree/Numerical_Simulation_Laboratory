@@ -124,7 +124,7 @@ double TSP :: distance(int i_city, int i_travel) {
 		double lon2 = _cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location()(0);
 		double a = pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((lon2 - lon1) / 2), 2);
 		double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-		return (6371 * c)/2000 ;
+		return 6371 * c ;
 	} else {
 		arma::Row<double> distance = _cities(_population.at(i_city, i_travel)).return_location() - 
 							_cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location();
