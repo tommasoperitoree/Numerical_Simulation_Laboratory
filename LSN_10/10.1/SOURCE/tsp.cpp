@@ -307,8 +307,6 @@ void TSP :: loss_evaluation() {
  */
 void TSP :: fitness_evaluation() {
 	double loss_norm = 0; // normalization factor for the weights
-	// double loss_avg = 0;
-	// int evaluation_range = 5;
 	for (int i_travel = 0; i_travel < _population_size; i_travel++)
 		loss_norm += 1/exp(_loss.at(0, i_travel)); // sum of the inverse of the loss function
 	for (int i_travel = 0; i_travel < _population_size; i_travel++){

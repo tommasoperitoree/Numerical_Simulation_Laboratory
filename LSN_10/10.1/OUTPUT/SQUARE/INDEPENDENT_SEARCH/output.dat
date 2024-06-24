@@ -2,7 +2,7 @@ GENETIC ALGORITHM WITH CITIES INSIDE A SQUARE
 Number of migrations = 15
 Norm order = 2
 Number of cities = 34
-Population size = 2000
+Population size = 1000
 Number of generations = 500
 Probabilities of mutations =    0.7000   0.0600   0.1000   0.0600   0.6000
 
