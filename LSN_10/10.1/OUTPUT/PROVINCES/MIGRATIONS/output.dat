@@ -1,7 +1,6 @@
 GENETIC ALGORITHM WITH ITALIAN PROVINCES
-Number of migrations = 5
+Number of migrations = 15
 Norm order = 2
-Weight power = 1
 Number of cities = 110
 Population size = 2000
 Number of generations = 500
