@@ -30,38 +30,52 @@ void TSP :: initialize (int rank) {
 		input >> property;
 		if (property == "TSP_TYPE") {
 			input >> _tsp_type;
-			if (_tsp_type > 1) {
-				std::cerr << "PROBLEM: unknown simulation type" << std::endl;
+			input >> _migration; 
+			if (_tsp_type > 2) {
+				std::cerr << "PROBLEM: unknown simulation type" << endl;
 				exit(EXIT_FAILURE);
 			}
-			if (_tsp_type == 0 and _rank == 0) {
-				_output_path = "../OUTPUT/Circle/";
-				coutf.open(_output_path + "output.dat");
-				coutf << "GENETIC ALGORITHM WITH CITIES AROUND CIRCUMFERENCE" << std::endl;
-			} else if (_tsp_type == 1 and _rank == 0) {
-				_output_path = "../OUTPUT/Square/";
-				coutf.open(_output_path + "output.dat");
-				coutf << "GENETIC ALGORITHM WITH CITIES INSIDE A SQUARE" << std::endl;
+			if (_tsp_type == 0) {
+				_output_path = "../OUTPUT/CIRCLE/";
+				if (_migration) _output_path = _output_path + "MIGRATIONS/";
+				else _output_path = _output_path + "INDEPENDENT_SEARCH/";
+				if(_rank == 0) {
+					coutf.open(_output_path + "output.dat");
+					coutf << "GENETIC ALGORITHM WITH CITIES AROUND CIRCUMFERENCE" << endl;
+				}
+			} if (_tsp_type == 1) {
+				_output_path = "../OUTPUT/SQUARE/";
+				if (_migration) _output_path = _output_path + "MIGRATIONS/";
+				else _output_path = _output_path + "INDEPENDENT_SEARCH/";
+				if(_rank == 0) {
+					coutf.open(_output_path + "output.dat");
+					coutf << "GENETIC ALGORITHM WITH CITIES INSIDE A SQUARE" << endl;
+				}
+			} else if (_tsp_type == 2) {
+				_output_path = "../OUTPUT/PROVINCES/";
+				if (_migration) _output_path = _output_path + "MIGRATIONS/";
+				else _output_path = _output_path + "INDEPENDENT_SEARCH/";
+				if(_rank == 0) {
+					coutf.open(_output_path + "output.dat");
+					coutf << "GENETIC ALGORITHM WITH ITALIAN PROVINCES" << endl;
+				}
 			}
 		} else if (property == "MIGRATION_STEP") {
 			input >> _migration_step;
-			if (_rank == 0) coutf << "Number of migrations = " << _migration_step << std::endl;
+			if (_rank == 0) coutf << "Number of migrations = " << _migration_step << endl;
 		} else if (property == "NORM_ORDER") {
 			input >> _norm_order;
-			if (_rank == 0) coutf << "Norm order = " << _norm_order << std::endl;
+			if (_rank == 0) coutf << "Norm order = " << _norm_order << endl;
 		} else if (property == "N_CITIES") {
 			input >> _n_cities;
 			_cities.set_size(_n_cities);
-			if (_rank == 0) coutf << "Number of cities = " << _n_cities << std::endl;
+			if (_rank == 0) coutf << "Number of cities = " << _n_cities << endl;
 		} else if (property == "N_INDIVIDUALS") {
 			input >> _population_size;
-			if (_rank == 0) coutf << "Population size = " << _population_size << std::endl;
-		} else if (property == "WEIGHT_POWER") {
-			input >> _weight_power;
-			if (_rank == 0) coutf << "Weight power = " << _weight_power << std::endl;
+			if (_rank == 0) coutf << "Population size = " << _population_size << endl;
 		} else if (property == "N_GENERATIONS") {
 			input >> _n_generations;
-			if (_rank == 0) coutf << "Number of generations = " << _n_generations << std::endl;
+			if (_rank == 0) coutf << "Number of generations = " << _n_generations << endl;
 		} else if (property == "PROB_MUTATIONS") {
 			input >> _prob_size;
 			double prob;
@@ -71,12 +85,12 @@ void TSP :: initialize (int rank) {
 				//cout << "prob " << i << " = " << prob << endl;
 				_prob_mutations = arma::join_vert(_prob_mutations, arma::Col<double>({prob}));
 			}
-			if (_rank == 0) coutf << "Probabilities of mutations = " << _prob_mutations.t() << std::endl;
+			if (_rank == 0) coutf << "Probabilities of mutations = " << _prob_mutations.t() << endl;
 		} else if (property == "ENDINPUT") {
-			if (_rank == 0) coutf << "Reading input completed!" << std::endl;
+			if (_rank == 0) coutf << "Reading input completed!" << endl;
 			break;			
 		} else {
-			std::cerr << "PROBLEM: unknown input" << std::endl;
+			std::cerr << "PROBLEM: unknown input" << endl;
 		}
 	}
 	input.close();
@@ -85,10 +99,10 @@ void TSP :: initialize (int rank) {
 		_population.resize(_n_cities, _population_size);
 		_loss.resize(_count_loss, _population_size);
 	} else {
-		std::cerr << "ERROR: Invalid _n_cities or _population_size" << std::endl;
+		std::cerr << "ERROR: Invalid _n_cities or _population_size" << endl;
 		return;
 	}
-	if (_rank == 0) coutf << "System initialized!" << std::endl;
+	if (_rank == 0) coutf << "System initialized!" << endl;
 	coutf.close();
 	if (_rank == 0) {
 		this->initialize_cities_position();
@@ -104,9 +118,19 @@ void TSP :: initialize (int rank) {
  * @return The distance between the two cities.
  */
 double TSP :: distance(int i_city, int i_travel) {
-	arma::Row<double> distance = _cities(_population.at(i_city, i_travel)).return_location() - 
-						_cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location();
-	return arma::norm(distance, _norm_order);
+	if (_tsp_type == 3) { // distance but with latitude and longitude
+		double lat1 = _cities(_population.at(i_city, i_travel)).return_location()(1);
+		double lon1 = _cities(_population.at(i_city, i_travel)).return_location()(0);
+		double lat2 = _cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location()(1);
+		double lon2 = _cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location()(0);
+		double a = pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((lon2 - lon1) / 2), 2);
+		double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+		return (6371 * c)/2000 ;
+	} else {
+		arma::Row<double> distance = _cities(_population.at(i_city, i_travel)).return_location() - 
+							_cities(_population.at(boundary_condition(i_city + 1), i_travel)).return_location();
+		return arma::norm(distance, _norm_order);
+	}
 }
 
 /**
@@ -146,11 +170,24 @@ void TSP :: initialize_cities_position() {
 			position(1) = sin(theta);
 			// position.print();
 			_cities(i_city).set_location(position, position.size());
-		} else { // _tsp_type == 1 i.e. cities position inside a square of side 2
+		} else if (_tsp_type == 1 ) { // cities position inside a square of side 2
 			position(0) = _rand.Rannyu(-1., 1.);
 			position(1) = _rand.Rannyu(-1., 1.);
 			// position.print();
 			_cities(i_city).set_location(position, position.size());
+		} else if (_tsp_type == 2) { // italian provinces, latitude and longitude
+			ifstream input("../INPUT/cap_prov_ita.dat");
+			double latitude, longitude;
+			for (int i = 0; i < _n_cities; i++) {
+				input >> longitude >> latitude;
+				// cout << " longitude = " << longitude << " latitude = " << latitude << endl;
+				position(0) = longitude;
+				position(1) = latitude;
+				_cities(i).set_location(position, position.size());
+			}
+		} else {
+			cerr << "ERROR: unknown TSP type" << endl;
+			exit(EXIT_FAILURE);
 		}
 	}
 	ofstream coutf;
@@ -248,18 +285,6 @@ double TSP :: loss_function(int i_travel) {
 
 	return loss;
 }
-/*
-double TSP :: loss_function(arma::Col<int> travel) {
-	double loss = 0.;
-	vec distance (_n_cities);
-	for (int i_city = 0; i_city < _n_cities; i_city++){
-		distance = _cities(travel(i_city)).return_location() -
-					  _cities(boundary_condition(i_city+1)).return_location() ;
-		loss += arma::norm(distance, _norm_order) ;
-	}
-
-	return loss;
-}*/
 
 /**
  * Evaluates the loss function for each travel in the population.
@@ -282,10 +307,10 @@ void TSP :: fitness_evaluation() {
 	// double loss_avg = 0;
 	// int evaluation_range = 5;
 	for (int i_travel = 0; i_travel < _population_size; i_travel++)
-		loss_norm += pow(_loss.at(0, i_travel), -1.*_weight_power); // sum of the inverse of the loss function
+		loss_norm += 1/exp(_loss.at(0, i_travel)); // sum of the inverse of the loss function
 	for (int i_travel = 0; i_travel < _population_size; i_travel++){
-		_loss.at(1, i_travel) = pow(_loss.at(0, i_travel), -1*_weight_power) / loss_norm;	// weight of the travel	
-		// cout << i_travel << ": loss = " << _loss.at(0, i_travel) << " weight = " << _loss.at(1,i_travel) << endl;
+		_loss.at(1, i_travel) = ( 1/exp(_loss.at(0, i_travel)) )/ loss_norm;	// weight of the travel	
+		// if (_rank == 0) cout << i_travel << ": loss = " << _loss.at(0, i_travel) << " weight = " << _loss.at(1,i_travel) << endl;
 		// if (i_travel < evaluation_range) loss_avg += _loss.at(0, i_travel);	
 	}
 	return;
@@ -322,7 +347,8 @@ void TSP :: swap_travels(int i_travel, int j_travel) {
  */
 void TSP :: cities_details_print() {
 	ofstream coutcit(_output_path + "cities_details.dat");
-	coutcit << "# CITY: \t\t POSITION X: \t POSITION Y: " << endl;
+	if (_tsp_type == 2) coutcit << "# CITY: \t\t LONGITUDE: \t LATITUDE: " << endl;
+	else coutcit << "# CITY: \t\t POSITION X: \t POSITION Y: " << endl;
 	for (int i = 0; i < _n_cities; i++) {
 		arma::Row<double> pos = _cities(i).return_location();
 		coutcit << setw(6) << i
@@ -337,8 +363,8 @@ void TSP :: cities_details_print() {
  * @param i_travel The index of the travel.
  */
 void TSP :: output_best_travel(int gen_count) {
-	ofstream couttrv(_output_path + "/fittest.dat", ios::app);
-	if (gen_count==0 or gen_count==_migration_step)
+	ofstream couttrv(_output_path + "rank" + to_string(_rank) + "_fittest.dat", ios::app);
+	if (gen_count==0)
 		couttrv << "# CITIES INDEX:" << endl;
 	
 	arma::Col<int> travel = _population.col(0);
@@ -348,35 +374,11 @@ void TSP :: output_best_travel(int gen_count) {
 	}
 	couttrv << endl;
 
-	ofstream coutls(_output_path + "/loss.dat", ios::app);
-	if (gen_count==0 or gen_count==_migration_step)
+	ofstream coutls(_output_path + "rank" + to_string(_rank) + "_loss.dat", ios::app);
+	if (gen_count==0)
 		coutls << "# BEST DISTANCE:" << endl;
 	coutls << setw(6) << gen_count
 			 << setw(16) << _loss.at(0,0) << endl;
-
-	coutls.close();
-	couttrv.close();
-
-	return;
-}
-
-void TSP :: output_best_travel_migr (int gen_count, arma::Col<int> migrator, double loss) {
-	ofstream couttrv(_output_path + "/fittest.dat", ios::app);
-	if (gen_count==0 or gen_count==_migration_step)
-		couttrv << "# CITIES INDEX:" << endl;
-	
-	for (int i = 0; i < _n_cities; i++) {
-		int index = migrator(i);
-		couttrv << setw(6) << index << endl;
-	}
-	couttrv << endl;
-
-	ofstream coutls(_output_path + "/loss.dat", ios::app);
-	if (gen_count==0 or gen_count==_migration_step)
-		coutls << "# BEST DISTANCE:" << endl;
-	
-	coutls << setw(6) << gen_count
-			 << setw(16) << loss << endl;
 
 	coutls.close();
 	couttrv.close();
@@ -692,11 +694,12 @@ void TSP :: evolution () {
 	// _population.print("new population");
 	loss_evaluation();
 
-	std::ofstream coutf;
-	coutf.open(_output_path + "output.dat", ios::app);
+	if (_rank == 0) {
+		std::ofstream coutf;
+		coutf.open(_output_path + "output.dat", ios::app);
+		coutf << "Evolution " << _evolution_count << " completed!" << endl;
+	}
 	_evolution_count++;
-	coutf << "Evolution " << _evolution_count << " completed!" << std::endl;
-
 
 	return ;
 }
@@ -706,8 +709,10 @@ void TSP :: evolution () {
  */
 void TSP :: finalize () {
 	_rand.SaveSeed();
-	ofstream coutf;
-	coutf.open(_output_path + "output.dat",ios::app);
-	coutf << endl << "Simulation completed!" << endl;
-	coutf.close();
+	if (_rank == 0) {
+		ofstream coutf;
+		coutf.open(_output_path + "output.dat",ios::app);
+		coutf << endl << "Simulation completed!" << endl;
+		coutf.close();
+	}
 }

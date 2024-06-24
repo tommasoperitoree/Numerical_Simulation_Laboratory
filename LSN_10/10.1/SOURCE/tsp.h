@@ -27,9 +27,9 @@ class TSP {
 		const int _count_loss = 2; /* The number of loss parameters (actual loss, weight). */
 
 		int _n_cities; /* The number of cities. */
+		bool _migration; /* The flag for migration. */
 		int _migration_step; /* The number of evolutions before migration, i.e. exchange of best travel among cores. */
 		double _norm_order; /* The order of the norm used to calculate distances. */
-		double _weight_power; /* The power used when evaluating weight. Higher means that fitter indivuals are more dominant*/
 		int _population_size; /* The size of the population. */
 		int _tsp_type; /* The type of the TSP problem. */
 		int _n_generations; /* The number of generations. */
@@ -62,7 +62,6 @@ class TSP {
 		void swap_travels (int i_travel, int j_travel);
 		void cities_details_print ();
 		void output_best_travel (int gen_count);
-		void output_best_travel_migr (int gen_count, arma::Col<int> migrator, double loss);
 		arma::Col<int> get_best_travel();
 		void set_best_travel(arma::Col<int> migrator);
 		void fitness_evaluation ();
@@ -81,6 +80,7 @@ class TSP {
 		int get_n_cities () { return _n_cities;};
 		double get_best_loss () { return _loss(0,0);};
 		int get_dimension () {return _dimension; };
+		bool get_migration () { return _migration; };
 		void set_cities_position (arma::Mat<double> cities_position);
 		arma::Mat<double> get_cities_position ();
 		

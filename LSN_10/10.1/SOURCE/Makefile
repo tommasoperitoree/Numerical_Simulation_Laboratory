@@ -19,13 +19,25 @@ tsp.o : tsp.cpp tsp.h
 	$(CC) -c tsp.cpp -o tsp.o $(CFLAGS)
 
 clean :
-	-rm *.o main.exe seed.out
-
-clean circle :
-	-rm ../OUTPUT/CIRCLE/* 
+	-rm *.o main.exe seed.out 
 	
-clean square :
-	-rm ../OUTPUT/SQUARE/*
+clean_prv_ind :
+	-rm ../OUTPUT/PROVINCES/INDEPENDENT_SEARCH/*.* 
+	
+clean_prv_migr :
+	-rm ../OUTPUT/PROVINCES/MIGRATIONS/*.*
+
+clean_cir_ind :
+	-rm ../OUTPUT/CIRCLE/INDEPENDENT_SEARCH/*.* 
+	
+clean_cir_migr :
+	-rm ../OUTPUT/CIRCLE/MIGRATIONS/*.*
+
+clean_squ_ind :
+	-rm ../OUTPUT/SQUARE/INDEPENDENT_SEARCH/*.* 
+	
+clean_squ_migr :
+	-rm ../OUTPUT/SQUARE/MIGRATIONS/*.*
 
 run : main.exe
-	mpiexec -np 8 ./main.exe
+	mpiexec -np 4 ./main.exe
